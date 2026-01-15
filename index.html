@@ -197,6 +197,11 @@ input:disabled, textarea:disabled {
   transform: translateY(0);
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-primary {
   background: var(--accent);
   color: white;
@@ -377,12 +382,20 @@ code {
   border-radius: 8px;
   font-size: 13px;
   display: none;
+  line-height: 1.8;
 }
 
 .predict-result.show { display: block; }
 
 .predict-result strong {
   color: var(--accent);
+}
+
+.divider {
+  text-align: center;
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 13px;
 }
   </style>
 </head>
@@ -524,8 +537,17 @@ code {
         <h2>🔮 Predict</h2>
 
         <div>
-          <label for="predictSlugInput">Market Slug</label>
-          <textarea id="predictSlugInput" placeholder="e.g., game-awards-game-of-the-year-2025"></textarea>
+          <label for="predictUrlInput">Polymarket URL</label>
+          <textarea id="predictUrlInput" placeholder="https://polymarket.com/event/will-the-supreme-court-rule-in-favor-of-trumps-tariffs"></textarea>
+        </div>
+
+        <div class="divider">
+          <strong>— OR —</strong>
+        </div>
+
+        <div>
+          <label for="predictIdInput">Market ID (direct entry)</label>
+          <input type="text" id="predictIdInput" placeholder="e.g., 67691">
         </div>
 
         <div class="predict-result" id="predictResult"></div>
@@ -546,7 +568,7 @@ code {
           </div>
         </div>
 
-        <div class="info">💡 Paste the market slug from a Polymarket URL (e.g., from <code>polymarket.com/event/your-slug-here</code>)</div>
+        <div class="info">💡 Paste the full Polymarket URL or enter the market ID directly. The slug will be automatically extracted from the URL.</div>
         <div class="foot">Base: <code>https://link.metamask.io/predict?marketId=</code></div>
       </article>
     </section>
@@ -556,7 +578,7 @@ code {
       <ul>
         <li><strong>Routing:</strong> Desktop with Extension → opens Extension. Mobile with app → opens app. Otherwise → download page.</li>
         <li><strong>Versions:</strong> Home: Ext ≥12.23.0, Mobile ≥7.51.0 | Swap: Ext ≥13.0.0, Mobile ≥7.51.0 | Predict: Latest versions</li>
-        <li><strong>Predict Markets:</strong> Uses Polymarket's Gamma API to fetch market IDs. Requires valid market slug.</li>
+        <li><strong>Predict Markets:</strong> Uses Polymarket's Gamma API to fetch market IDs. Requires valid market slug or direct ID.</li>
       </ul>
     </section>
   </main>
@@ -775,12 +797,37 @@ code {
     }
 
     // ===== POLYMARKET API =====
+    function extractSlugFromUrl(url) {
+      try {
+        var cleanUrl = url.trim();
+        
+        if (cleanUrl.includes('polymarket.com/event/')) {
+          var parts = cleanUrl.split('/event/');
+          if (parts.length > 1) {
+            var slug = parts[1].split('?')[0].split('#')[0].replace(/\/$/, '');
+            return slug;
+          }
+        }
+        
+        if (!cleanUrl.includes('/') && !cleanUrl.includes('http')) {
+          return cleanUrl;
+        }
+        
+        throw new Error('Invalid URL format');
+      } catch (error) {
+        throw new Error('Could not extract slug from URL');
+      }
+    }
+
     async function fetchMarketId(slug) {
       try {
         var cleanSlug = slug.trim();
-        var apiUrl = 'https://gamma-api.polymarket.com/events?slug=' + encodeURIComponent(cleanSlug);
         
-        var response = await fetch(apiUrl);
+        var apiUrl = 'https://gamma-api.polymarket.com/events?slug=' + encodeURIComponent(cleanSlug);
+        var proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(apiUrl);
+        
+        var response = await fetch(proxyUrl);
+        
         if (!response.ok) {
           throw new Error('API request failed');
         }
@@ -788,7 +835,11 @@ code {
         var data = await response.json();
         
         if (data && data.length > 0 && data[0].id) {
-          return { id: data[0].id, title: data[0].title || cleanSlug };
+          return { 
+            id: data[0].id, 
+            title: data[0].title || cleanSlug,
+            slug: cleanSlug 
+          };
         } else {
           throw new Error('Market not found');
         }
@@ -1017,7 +1068,8 @@ code {
 
     // ===== PREDICT =====
     function initPredict() {
-      var slugInput = getEl('predictSlugInput');
+      var urlInput = getEl('predictUrlInput');
+      var idInput = getEl('predictIdInput');
       var resultDiv = getEl('predictResult');
       var genBtn = getEl('predictGenerateBtn');
       var copyBtn = getEl('predictCopyBtn');
@@ -1026,9 +1078,24 @@ code {
       var output = getEl('predictOutput');
 
       genBtn.addEventListener('click', async function() {
-        var slug = slugInput.value.trim();
-        if (!slug) {
-          showToast('Please enter a market slug');
+        var urlOrSlug = urlInput.value.trim();
+        var directId = idInput.value.trim();
+
+        // If user provided ID directly, use it
+        if (directId) {
+          var url = 'https://link.metamask.io/predict?marketId=' + encodeURIComponent(directId);
+          output.textContent = url;
+          output.classList.add('has-content');
+          renderQr('predictQrContainer', 'predictQrWrap', url);
+          resultDiv.innerHTML = '<strong>Using Market ID:</strong> ' + directId;
+          resultDiv.classList.add('show');
+          showToast('Predict deeplink generated!');
+          return;
+        }
+
+        // Otherwise try to extract slug and fetch
+        if (!urlOrSlug) {
+          showToast('Please enter a Polymarket URL or Market ID');
           return;
         }
 
@@ -1038,9 +1105,19 @@ code {
         resultDiv.classList.remove('show');
 
         try {
+          // Extract slug from URL
+          var slug = extractSlugFromUrl(urlOrSlug);
+          
+          resultDiv.innerHTML = '<strong>Extracted Slug:</strong> ' + slug + '<br><span class="loading"></span> Fetching market data...';
+          resultDiv.classList.add('show');
+
+          // Fetch market ID
           var marketData = await fetchMarketId(slug);
           
-          resultDiv.innerHTML = '<strong>Market Found:</strong> ' + marketData.title + '<br><strong>ID:</strong> ' + marketData.id;
+          resultDiv.innerHTML = '<strong>Market Found!</strong><br>' +
+                               '<strong>Title:</strong> ' + marketData.title + '<br>' +
+                               '<strong>Slug:</strong> ' + marketData.slug + '<br>' +
+                               '<strong>ID:</strong> ' + marketData.id;
           resultDiv.classList.add('show');
 
           var url = 'https://link.metamask.io/predict?marketId=' + encodeURIComponent(marketData.id);
@@ -1049,8 +1126,21 @@ code {
           renderQr('predictQrContainer', 'predictQrWrap', url);
           showToast('Predict deeplink generated!');
         } catch (error) {
-          showToast('Failed to fetch market. Check the slug.');
-          resultDiv.innerHTML = '<strong>Error:</strong> Market not found. Please check the slug and try again.';
+          showToast('Failed to generate deeplink');
+          var errorMsg = '<strong>Error:</strong> ' + error.message + '<br><br>';
+          
+          if (error.message === 'Could not extract slug from URL') {
+            errorMsg += '<strong>Tip:</strong> Make sure you paste the full URL like:<br>' +
+                       '<code>https://polymarket.com/event/your-market-slug</code>';
+          } else {
+            errorMsg += '<strong>Manual steps:</strong><br>' +
+                       '1. Extract the slug from your URL (the part after /event/)<br>' +
+                       '2. Visit <code>https://gamma-api.polymarket.com/events?slug=YOUR-SLUG</code><br>' +
+                       '3. Find the "id" field in the response<br>' +
+                       '4. Enter it in the Market ID field above';
+          }
+          
+          resultDiv.innerHTML = errorMsg;
           resultDiv.classList.add('show');
         } finally {
           genBtn.disabled = false;
@@ -1068,7 +1158,8 @@ code {
       });
 
       resetBtn.addEventListener('click', function() {
-        slugInput.value = '';
+        urlInput.value = '';
+        idInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
         resultDiv.classList.remove('show');
