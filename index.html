@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
 :root {
   --mm-orange: #F6851B;
@@ -15,6 +16,10 @@
   --mm-blue-hover: #0260A4;
   --mm-green: #28A745;
   --mm-red: #D73A49;
+  --mm-solana: #9945FF;
+  --mm-bitcoin: #F7931A;
+  --mm-tron: #FF0013;
+
   --bg: #F7F8FA;
   --card: #FFFFFF;
   --muted: #6A737D;
@@ -37,9 +42,7 @@
   }
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html, body {
   margin: 0;
@@ -68,10 +71,7 @@ html, body {
   gap: 12px;
 }
 
-.logo-img {
-  width: 40px;
-  height: 40px;
-}
+.logo-img { width: 40px; height: 40px; }
 
 .wrap {
   max-width: 1200px;
@@ -110,9 +110,7 @@ h2 {
 }
 
 @media (max-width: 980px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
+  .grid { grid-template-columns: 1fr; }
 }
 
 .card {
@@ -173,18 +171,13 @@ input:disabled {
   transition: all 0.2s ease;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-}
+.btn:hover { transform: translateY(-1px); }
 
 .btn-primary {
   background: var(--accent);
   color: white;
 }
-
-.btn-primary:hover {
-  background: var(--mm-blue-hover);
-}
+.btn-primary:hover { background: var(--mm-blue-hover); }
 
 .btn-copy {
   background: var(--mm-green);
@@ -193,6 +186,11 @@ input:disabled {
 
 .btn-reset {
   background: var(--mm-orange);
+  color: white;
+}
+
+.btn-qr {
+  background: #111827;
   color: white;
 }
 
@@ -235,14 +233,9 @@ input:disabled {
   cursor: pointer;
 }
 
-.checkbox-row label {
-  margin: 0;
-  cursor: pointer;
-}
+.checkbox-row label { margin: 0; cursor: pointer; }
 
-.sig-input {
-  margin-top: 8px;
-}
+.sig-input { margin-top: 8px; }
 
 .warn {
   color: var(--mm-orange);
@@ -283,9 +276,7 @@ code {
   z-index: 1000;
 }
 
-.toast.show {
-  transform: translateX(0);
-}
+.toast.show { transform: translateX(0); }
 
 .disclaimer {
   margin-top: 32px;
@@ -313,11 +304,40 @@ code {
   color: var(--muted);
 }
 
-.disclaimer li:last-child {
-  border-bottom: none;
+.disclaimer li:last-child { border-bottom: none; }
+
+.qr-wrap {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  display: none;
+}
+
+.qr-wrap.show { display: block; }
+
+.qr-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.qr-canvas {
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.qr-help {
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 320px;
 }
   </style>
 </head>
+
 <body>
   <header class="header">
     <div class="header-content">
@@ -328,38 +348,46 @@ code {
 
   <main class="wrap">
     <section class="intro">
-      <p>Generate secure deeplinks for MetaMask Home, Swap, and Buy features. Select your parameters and click Generate.</p>
+      <p>Generate secure deeplinks for MetaMask Home, Swap, and Buy features. Select your parameters and click Generate. Swap now includes EVM, Solana, Bitcoin, and Tron formatting.</p>
     </section>
 
     <section class="grid">
       <!-- HOME CARD -->
       <article class="card">
         <h2>🏠 Home</h2>
-        
+
         <div class="checkbox-row">
           <input type="checkbox" id="homeSignedCheck">
           <label for="homeSignedCheck">Signed deeplink?</label>
         </div>
-        
+
         <div class="sig-input">
           <input type="text" id="homeSigInput" placeholder="Paste signature here..." disabled>
         </div>
-        
+
         <div class="btn-group">
           <button type="button" class="btn btn-primary" id="homeGenerateBtn">Generate</button>
           <button type="button" class="btn btn-copy" id="homeCopyBtn">Copy</button>
+          <button type="button" class="btn btn-qr" id="homeQrBtn">QR</button>
           <button type="button" class="btn btn-reset" id="homeResetBtn">Reset</button>
         </div>
-        
+
         <div class="output" id="homeOutput"></div>
-        
+
+        <div class="qr-wrap" id="homeQrWrap">
+          <div class="qr-row">
+            <canvas class="qr-canvas" id="homeQrCanvas" width="196" height="196"></canvas>
+            <div class="qr-help">Scan on mobile to open the deeplink. If MetaMask is not installed, you may be routed to a download page.</div>
+          </div>
+        </div>
+
         <div class="foot">Base: <code>https://link.metamask.io/home</code></div>
       </article>
 
       <!-- SWAP CARD -->
       <article class="card">
         <h2>🔄 Swap</h2>
-        
+
         <div class="row">
           <div>
             <label for="fromChainSelect">From Chain</label>
@@ -370,7 +398,7 @@ code {
             <select id="fromTokenSelect"></select>
           </div>
         </div>
-        
+
         <div class="row">
           <div>
             <label for="toChainSelect">To Chain</label>
@@ -381,7 +409,7 @@ code {
             <select id="toTokenSelect"></select>
           </div>
         </div>
-        
+
         <div class="row">
           <div>
             <label for="amountInput">Amount</label>
@@ -392,49 +420,65 @@ code {
             <input type="text" id="baseUnitsDisplay" readonly placeholder="Calculated">
           </div>
         </div>
-        
+
         <div class="checkbox-row">
           <input type="checkbox" id="swapSignedCheck">
           <label for="swapSignedCheck">Signed deeplink?</label>
         </div>
-        
+
         <div class="sig-input">
           <input type="text" id="swapSigInput" placeholder="Paste signature here..." disabled>
         </div>
-        
+
         <div class="btn-group">
           <button type="button" class="btn btn-primary" id="swapGenerateBtn">Generate</button>
           <button type="button" class="btn btn-copy" id="swapCopyBtn">Copy</button>
+          <button type="button" class="btn btn-qr" id="swapQrBtn">QR</button>
           <button type="button" class="btn btn-reset" id="swapResetBtn">Reset</button>
         </div>
-        
+
         <div class="output" id="swapOutput"></div>
-        
-        <div class="warn">⚠️ Only verified token addresses included.</div>
+
+        <div class="qr-wrap" id="swapQrWrap">
+          <div class="qr-row">
+            <canvas class="qr-canvas" id="swapQrCanvas" width="196" height="196"></canvas>
+            <div class="qr-help">If a given pair is not routable, MetaMask may show no route available. This generator still formats the deeplink parameters correctly.</div>
+          </div>
+        </div>
+
+        <div class="warn">⚠️ Only verified token addresses included (where applicable). Cross chain routing depends on MetaMask support.</div>
         <div class="foot">Base: <code>https://link.metamask.io/swap</code></div>
       </article>
 
       <!-- BUY CARD -->
       <article class="card">
         <h2>💳 Buy</h2>
-        
+
         <div class="checkbox-row">
           <input type="checkbox" id="buySignedCheck">
           <label for="buySignedCheck">Signed deeplink?</label>
         </div>
-        
+
         <div class="sig-input">
           <input type="text" id="buySigInput" placeholder="Paste signature here..." disabled>
         </div>
-        
+
         <div class="btn-group">
           <button type="button" class="btn btn-primary" id="buyGenerateBtn">Generate</button>
           <button type="button" class="btn btn-copy" id="buyCopyBtn">Copy</button>
+          <button type="button" class="btn btn-qr" id="buyQrBtn">QR</button>
           <button type="button" class="btn btn-reset" id="buyResetBtn">Reset</button>
         </div>
-        
+
         <div class="output" id="buyOutput"></div>
-        
+
+        <div class="qr-wrap" id="buyQrWrap">
+          <div class="qr-row">
+            <canvas class="qr-canvas" id="buyQrCanvas" width="196" height="196"></canvas>
+            <div class="qr-help">Use QR for quick handoff to mobile, especially when you are generating links on desktop.</div>
+          </div>
+        </div>
+
         <div class="foot">Base: <code>https://link.metamask.io/buy</code></div>
       </article>
     </section>
@@ -451,20 +495,36 @@ code {
 
   <div class="toast" id="toast"></div>
 
+  <!-- QR code library (small, reliable). If you later add a CSP, allow https://cdn.jsdelivr.net in script-src -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
   <script>
     // ===== DATA =====
+    // Adds Solana, Bitcoin, Tron with namespaces: solana, bip122, tron
     var CHAINS = [
-      { key: 'ethereum', label: 'Ethereum', chainId: 1, slip: 60 },
-      { key: 'polygon', label: 'Polygon', chainId: 137, slip: 966 },
-      { key: 'base', label: 'Base', chainId: 8453, slip: 60 },
-      { key: 'arbitrum', label: 'Arbitrum', chainId: 42161, slip: 60 },
-      { key: 'optimism', label: 'Optimism', chainId: 10, slip: 60 },
-      { key: 'avalanche', label: 'Avalanche', chainId: 43114, slip: 9005 },
-      { key: 'bsc', label: 'BNB Chain', chainId: 56, slip: 714 },
-      { key: 'linea', label: 'Linea', chainId: 59144, slip: 60 }
+      // EVM
+      { key: 'ethereum', label: 'Ethereum', type: 'evm', ns: 'eip155', chainId: 1, slip: 60 },
+      { key: 'polygon', label: 'Polygon', type: 'evm', ns: 'eip155', chainId: 137, slip: 966 },
+      { key: 'base', label: 'Base', type: 'evm', ns: 'eip155', chainId: 8453, slip: 60 },
+      { key: 'arbitrum', label: 'Arbitrum', type: 'evm', ns: 'eip155', chainId: 42161, slip: 60 },
+      { key: 'optimism', label: 'Optimism', type: 'evm', ns: 'eip155', chainId: 10, slip: 60 },
+      { key: 'avalanche', label: 'Avalanche', type: 'evm', ns: 'eip155', chainId: 43114, slip: 9005 },
+      { key: 'bsc', label: 'BNB Chain', type: 'evm', ns: 'eip155', chainId: 56, slip: 714 },
+      { key: 'linea', label: 'Linea', type: 'evm', ns: 'eip155', chainId: 59144, slip: 60 },
+
+      // Solana
+      // chainId is Solana "chain reference" used in CAIP style strings (commonly the genesis hash)
+      { key: 'solana', label: 'Solana', type: 'solana', ns: 'solana', chainId: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp', slip: 501 },
+
+      // Bitcoin
+      { key: 'bitcoin', label: 'Bitcoin', type: 'bitcoin', ns: 'bip122', chainId: '000000000019d6689c085ae165831e93', slip: 0 },
+
+      // Tron
+      { key: 'tron', label: 'Tron', type: 'tron', ns: 'tron', chainId: '0x2b6653dc', slip: 195 }
     ];
 
     var TOKENS = {
+      // EVM tokens
       ethereum: [
         { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
         { sym: 'USDC', type: 'erc20', addr: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', dec: 6 },
@@ -504,35 +564,43 @@ code {
       linea: [
         { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
         { sym: 'USDC', type: 'erc20', addr: '0x176211869cA2b568f2A7D4EE941E073a821EE1ff', dec: 6 }
+      ],
+
+      // Solana (SPL)
+      solana: [
+        { sym: 'SOL', type: 'slip44', addr: '501', dec: 9 },
+        { sym: 'USDC', type: 'spl', addr: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6 },
+        { sym: 'USDT', type: 'spl', addr: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6 }
+      ],
+
+      // Bitcoin
+      bitcoin: [
+        { sym: 'BTC', type: 'slip44', addr: '0', dec: 8 }
+      ],
+
+      // Tron (TRC20)
+      tron: [
+        { sym: 'TRX', type: 'slip44', addr: '195', dec: 6 },
+        { sym: 'USDT', type: 'trc20', addr: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', dec: 6 },
+        { sym: 'USDC', type: 'trc20', addr: 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8', dec: 6 }
       ]
     };
 
     // ===== HELPERS =====
-    function getEl(id) {
-      return document.getElementById(id);
-    }
+    function getEl(id) { return document.getElementById(id); }
 
     function showToast(msg) {
       var toast = getEl('toast');
       toast.textContent = msg;
       toast.classList.add('show');
-      setTimeout(function() {
-        toast.classList.remove('show');
-      }, 2500);
+      setTimeout(function() { toast.classList.remove('show'); }, 2500);
     }
 
     function copyText(text) {
-      if (!text) {
-        showToast('Nothing to copy!');
-        return;
-      }
-      
+      if (!text) { showToast('Nothing to copy!'); return; }
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(function() {
-          showToast('Copied!');
-        }).catch(function() {
-          showToast('Copy failed');
-        });
+        navigator.clipboard.writeText(text).then(function() { showToast('Copied!'); })
+          .catch(function() { showToast('Copy failed'); });
       } else {
         var ta = document.createElement('textarea');
         ta.value = text;
@@ -540,12 +608,8 @@ code {
         ta.style.opacity = '0';
         document.body.appendChild(ta);
         ta.select();
-        try {
-          document.execCommand('copy');
-          showToast('Copied!');
-        } catch (e) {
-          showToast('Copy failed');
-        }
+        try { document.execCommand('copy'); showToast('Copied!'); }
+        catch (e) { showToast('Copy failed'); }
         document.body.removeChild(ta);
       }
     }
@@ -554,14 +618,16 @@ code {
       if (!amount || isNaN(parseFloat(amount))) return '';
       var num = parseFloat(amount);
       if (num < 0) return '';
-      
+
+      // reject scientific notation
+      if (String(amount).toLowerCase().indexOf('e') !== -1) return '';
+
       var parts = String(amount).split('.');
       var intPart = parts[0] || '0';
       var fracPart = parts[1] || '';
-      
       fracPart = (fracPart + '0'.repeat(decimals)).slice(0, decimals);
-      var result = (intPart + fracPart).replace(/^0+/, '');
-      
+
+      var result = (intPart.replace(/\D/g, '') + fracPart.replace(/\D/g, '')).replace(/^0+/, '');
       return result || '0';
     }
 
@@ -585,27 +651,83 @@ code {
     function populateTokens(selectEl, chainKey) {
       selectEl.innerHTML = '';
       var tokens = TOKENS[chainKey] || [];
-      
       for (var i = 0; i < tokens.length; i++) {
         var opt = document.createElement('option');
         opt.value = i;
         opt.textContent = tokens[i].sym;
         selectEl.appendChild(opt);
       }
-      
       if (tokens.length === 0) {
-        var opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = '(none)';
-        selectEl.appendChild(opt);
+        var opt2 = document.createElement('option');
+        opt2.value = '';
+        opt2.textContent = '(none)';
+        selectEl.appendChild(opt2);
       }
     }
 
+    function getNamespaceString(chain) {
+      // Examples:
+      // EVM: eip155:1
+      // Solana: solana:<genesisHash>
+      // Bitcoin: bip122:<genesisHash>
+      // Tron: tron:0x2b6653dc
+      return chain.ns + ':' + chain.chainId;
+    }
+
     function getAssetString(token) {
-      if (token.type === 'slip44') {
-        return 'slip44:' + token.addr;
+      // Native: slip44:<coinType>
+      // EVM: erc20:<address>
+      // Solana: spl:<mint>
+      // Tron: trc20:<contract>
+      if (token.type === 'slip44') return 'slip44:' + token.addr;
+      if (token.type === 'erc20') return 'erc20:' + token.addr;
+      if (token.type === 'spl') return 'spl:' + token.addr;
+      if (token.type === 'trc20') return 'trc20:' + token.addr;
+      return '';
+    }
+
+    function setQrVisible(wrapId, isVisible) {
+      var w = getEl(wrapId);
+      if (!w) return;
+      if (isVisible) w.classList.add('show');
+      else w.classList hide = w.classList.remove('show');
+    }
+
+    function clearCanvas(canvas) {
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function renderQr(canvasId, wrapId, text) {
+      var canvas = getEl(canvasId);
+      var wrap = getEl(wrapId);
+      if (!canvas || !wrap) return;
+
+      if (!text) {
+        clearCanvas(canvas);
+        wrap.classList.remove('show');
+        return;
       }
-      return 'erc20:' + token.addr;
+
+      // Ensure visible
+      wrap.classList.add('show');
+
+      // Render
+      try {
+        QRCode.toCanvas(canvas, text, {
+          width: 196,
+          margin: 1
+        }, function(err) {
+          if (err) {
+            showToast('QR generation failed');
+            clearCanvas(canvas);
+          }
+        });
+      } catch (e) {
+        showToast('QR generation failed');
+        clearCanvas(canvas);
+      }
     }
 
     // ===== HOME =====
@@ -614,6 +736,7 @@ code {
       var sigInput = getEl('homeSigInput');
       var genBtn = getEl('homeGenerateBtn');
       var copyBtn = getEl('homeCopyBtn');
+      var qrBtn = getEl('homeQrBtn');
       var resetBtn = getEl('homeResetBtn');
       var output = getEl('homeOutput');
 
@@ -624,18 +747,22 @@ code {
 
       genBtn.addEventListener('click', function() {
         var url = 'https://link.metamask.io/home';
-        
         if (checkbox.checked && sigInput.value.trim()) {
           url += '?sig=' + encodeURIComponent(sigInput.value.trim());
         }
-        
         output.textContent = url;
         output.classList.add('has-content');
+        renderQr('homeQrCanvas', 'homeQrWrap', url);
         showToast('Home deeplink generated!');
       });
 
-      copyBtn.addEventListener('click', function() {
-        copyText(output.textContent);
+      copyBtn.addEventListener('click', function() { copyText(output.textContent); });
+
+      qrBtn.addEventListener('click', function() {
+        var url = output.textContent || '';
+        if (!url) { showToast('Generate a link first'); return; }
+        renderQr('homeQrCanvas', 'homeQrWrap', url);
+        showToast('QR ready');
       });
 
       resetBtn.addEventListener('click', function() {
@@ -644,6 +771,7 @@ code {
         sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
+        renderQr('homeQrCanvas', 'homeQrWrap', '');
         showToast('Reset!');
       });
     }
@@ -660,21 +788,20 @@ code {
       var sigInput = getEl('swapSigInput');
       var genBtn = getEl('swapGenerateBtn');
       var copyBtn = getEl('swapCopyBtn');
+      var qrBtn = getEl('swapQrBtn');
       var resetBtn = getEl('swapResetBtn');
       var output = getEl('swapOutput');
 
-      // Populate chains
       populateChains(fromChain);
       populateChains(toChain);
-      
-      // Set defaults
+
+      // Defaults (same as your working version)
       fromChain.value = 'ethereum';
       toChain.value = 'polygon';
-      
+
       populateTokens(fromToken, fromChain.value);
       populateTokens(toToken, toChain.value);
 
-      // Chain change handlers
       fromChain.addEventListener('change', function() {
         populateTokens(fromToken, fromChain.value);
       });
@@ -683,61 +810,73 @@ code {
         populateTokens(toToken, toChain.value);
       });
 
-      // Signature checkbox
       checkbox.addEventListener('change', function() {
         sigInput.disabled = !checkbox.checked;
         if (!checkbox.checked) sigInput.value = '';
       });
 
-      // Generate
       genBtn.addEventListener('click', function() {
         var fc = getChain(fromChain.value);
         var tc = getChain(toChain.value);
-        
+        if (!fc || !tc) { showToast('Please select valid chains'); return; }
+
         var ftTokens = TOKENS[fromChain.value] || [];
         var ttTokens = TOKENS[toChain.value] || [];
-        
+
         var ftIdx = parseInt(fromToken.value);
         var ttIdx = parseInt(toToken.value);
-        
+
         if (isNaN(ftIdx) || isNaN(ttIdx) || !ftTokens[ftIdx] || !ttTokens[ttIdx]) {
           showToast('Please select valid tokens');
           return;
         }
-        
+
         var ft = ftTokens[ftIdx];
         var tt = ttTokens[ttIdx];
-        
-        var fromNs = 'eip155:' + fc.chainId;
-        var toNs = 'eip155:' + tc.chainId;
-        
+
+        var fromNs = getNamespaceString(fc);
+        var toNs = getNamespaceString(tc);
+
         var fromAsset = getAssetString(ft);
         var toAsset = getAssetString(tt);
-        
-        var url = 'https://link.metamask.io/swap?from=' + fromNs + '/' + fromAsset + '&to=' + toNs + '/' + toAsset;
-        
-        // Amount
+
+        if (!fromAsset || !toAsset) {
+          showToast('Invalid asset format for selected tokens');
+          return;
+        }
+
+        var url = 'https://link.metamask.io/swap?from=' + encodeURIComponent(fromNs + '/' + fromAsset)
+                + '&to=' + encodeURIComponent(toNs + '/' + toAsset);
+
+        // Amount (uses FROM token decimals)
         var amt = amountInput.value;
         if (amt && parseFloat(amt) > 0) {
           var base = toBaseUnits(amt, ft.dec);
+          if (!base) { showToast('Invalid amount'); return; }
           baseDisplay.value = base;
-          url += '&amount=' + base;
+          url += '&amount=' + encodeURIComponent(base);
         } else {
           baseDisplay.value = '';
         }
-        
+
         // Signature
         if (checkbox.checked && sigInput.value.trim()) {
           url += '&sig=' + encodeURIComponent(sigInput.value.trim());
         }
-        
+
         output.textContent = url;
         output.classList.add('has-content');
+        renderQr('swapQrCanvas', 'swapQrWrap', url);
         showToast('Swap deeplink generated!');
       });
 
-      copyBtn.addEventListener('click', function() {
-        copyText(output.textContent);
+      copyBtn.addEventListener('click', function() { copyText(output.textContent); });
+
+      qrBtn.addEventListener('click', function() {
+        var url = output.textContent || '';
+        if (!url) { showToast('Generate a link first'); return; }
+        renderQr('swapQrCanvas', 'swapQrWrap', url);
+        showToast('QR ready');
       });
 
       resetBtn.addEventListener('click', function() {
@@ -752,6 +891,7 @@ code {
         sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
+        renderQr('swapQrCanvas', 'swapQrWrap', '');
         showToast('Reset!');
       });
     }
@@ -762,6 +902,7 @@ code {
       var sigInput = getEl('buySigInput');
       var genBtn = getEl('buyGenerateBtn');
       var copyBtn = getEl('buyCopyBtn');
+      var qrBtn = getEl('buyQrBtn');
       var resetBtn = getEl('buyResetBtn');
       var output = getEl('buyOutput');
 
@@ -772,18 +913,22 @@ code {
 
       genBtn.addEventListener('click', function() {
         var url = 'https://link.metamask.io/buy';
-        
         if (checkbox.checked && sigInput.value.trim()) {
           url += '?sig=' + encodeURIComponent(sigInput.value.trim());
         }
-        
         output.textContent = url;
         output.classList.add('has-content');
+        renderQr('buyQrCanvas', 'buyQrWrap', url);
         showToast('Buy deeplink generated!');
       });
 
-      copyBtn.addEventListener('click', function() {
-        copyText(output.textContent);
+      copyBtn.addEventListener('click', function() { copyText(output.textContent); });
+
+      qrBtn.addEventListener('click', function() {
+        var url = output.textContent || '';
+        if (!url) { showToast('Generate a link first'); return; }
+        renderQr('buyQrCanvas', 'buyQrWrap', url);
+        showToast('QR ready');
       });
 
       resetBtn.addEventListener('click', function() {
@@ -792,17 +937,16 @@ code {
         sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
+        renderQr('buyQrCanvas', 'buyQrWrap', '');
         showToast('Reset!');
       });
     }
 
     // ===== INIT =====
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('Initializing...');
       initHome();
       initSwap();
       initBuy();
-      console.log('Ready!');
     });
   </script>
 </body>
