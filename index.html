@@ -495,12 +495,10 @@ code {
 
   <div class="toast" id="toast"></div>
 
-  <!-- QR code library (small, reliable). If you later add a CSP, allow https://cdn.jsdelivr.net in script-src -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
   <script>
     // ===== DATA =====
-    // Adds Solana, Bitcoin, Tron with namespaces: solana, bip122, tron
     var CHAINS = [
       // EVM
       { key: 'ethereum', label: 'Ethereum', type: 'evm', ns: 'eip155', chainId: 1, slip: 60 },
@@ -513,7 +511,6 @@ code {
       { key: 'linea', label: 'Linea', type: 'evm', ns: 'eip155', chainId: 59144, slip: 60 },
 
       // Solana
-      // chainId is Solana "chain reference" used in CAIP style strings (commonly the genesis hash)
       { key: 'solana', label: 'Solana', type: 'solana', ns: 'solana', chainId: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp', slip: 501 },
 
       // Bitcoin
@@ -524,7 +521,6 @@ code {
     ];
 
     var TOKENS = {
-      // EVM tokens
       ethereum: [
         { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
         { sym: 'USDC', type: 'erc20', addr: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', dec: 6 },
@@ -565,20 +561,14 @@ code {
         { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
         { sym: 'USDC', type: 'erc20', addr: '0x176211869cA2b568f2A7D4EE941E073a821EE1ff', dec: 6 }
       ],
-
-      // Solana (SPL)
       solana: [
         { sym: 'SOL', type: 'slip44', addr: '501', dec: 9 },
         { sym: 'USDC', type: 'spl', addr: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6 },
         { sym: 'USDT', type: 'spl', addr: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6 }
       ],
-
-      // Bitcoin
       bitcoin: [
         { sym: 'BTC', type: 'slip44', addr: '0', dec: 8 }
       ],
-
-      // Tron (TRC20)
       tron: [
         { sym: 'TRX', type: 'slip44', addr: '195', dec: 6 },
         { sym: 'USDT', type: 'trc20', addr: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', dec: 6 },
@@ -619,7 +609,6 @@ code {
       var num = parseFloat(amount);
       if (num < 0) return '';
 
-      // reject scientific notation
       if (String(amount).toLowerCase().indexOf('e') !== -1) return '';
 
       var parts = String(amount).split('.');
@@ -666,31 +655,15 @@ code {
     }
 
     function getNamespaceString(chain) {
-      // Examples:
-      // EVM: eip155:1
-      // Solana: solana:<genesisHash>
-      // Bitcoin: bip122:<genesisHash>
-      // Tron: tron:0x2b6653dc
       return chain.ns + ':' + chain.chainId;
     }
 
     function getAssetString(token) {
-      // Native: slip44:<coinType>
-      // EVM: erc20:<address>
-      // Solana: spl:<mint>
-      // Tron: trc20:<contract>
       if (token.type === 'slip44') return 'slip44:' + token.addr;
       if (token.type === 'erc20') return 'erc20:' + token.addr;
       if (token.type === 'spl') return 'spl:' + token.addr;
       if (token.type === 'trc20') return 'trc20:' + token.addr;
       return '';
-    }
-
-    function setQrVisible(wrapId, isVisible) {
-      var w = getEl(wrapId);
-      if (!w) return;
-      if (isVisible) w.classList.add('show');
-      else w.classList hide = w.classList.remove('show');
     }
 
     function clearCanvas(canvas) {
@@ -710,10 +683,8 @@ code {
         return;
       }
 
-      // Ensure visible
       wrap.classList.add('show');
 
-      // Render
       try {
         QRCode.toCanvas(canvas, text, {
           width: 196,
@@ -795,7 +766,6 @@ code {
       populateChains(fromChain);
       populateChains(toChain);
 
-      // Defaults (same as your working version)
       fromChain.value = 'ethereum';
       toChain.value = 'polygon';
 
@@ -848,7 +818,6 @@ code {
         var url = 'https://link.metamask.io/swap?from=' + encodeURIComponent(fromNs + '/' + fromAsset)
                 + '&to=' + encodeURIComponent(toNs + '/' + toAsset);
 
-        // Amount (uses FROM token decimals)
         var amt = amountInput.value;
         if (amt && parseFloat(amt) > 0) {
           var base = toBaseUnits(amt, ft.dec);
@@ -859,7 +828,6 @@ code {
           baseDisplay.value = '';
         }
 
-        // Signature
         if (checkbox.checked && sigInput.value.trim()) {
           url += '&sig=' + encodeURIComponent(sigInput.value.trim());
         }
