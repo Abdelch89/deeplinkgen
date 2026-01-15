@@ -324,12 +324,11 @@ code {
   flex-wrap: wrap;
 }
 
-.qr-canvas {
+.qr-container {
   background: white;
   padding: 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  display: block;
 }
 
 .qr-help {
@@ -378,7 +377,7 @@ code {
 
         <div class="qr-wrap" id="homeQrWrap">
           <div class="qr-row">
-            <canvas class="qr-canvas" id="homeQrCanvas" width="196" height="196"></canvas>
+            <div class="qr-container" id="homeQrContainer"></div>
             <div class="qr-help">Scan on mobile to open the deeplink. If MetaMask is not installed, you may be routed to a download page.</div>
           </div>
         </div>
@@ -443,7 +442,7 @@ code {
 
         <div class="qr-wrap" id="swapQrWrap">
           <div class="qr-row">
-            <canvas class="qr-canvas" id="swapQrCanvas" width="196" height="196"></canvas>
+            <div class="qr-container" id="swapQrContainer"></div>
             <div class="qr-help">If a given pair is not routable, MetaMask may show no route available. This generator still formats the deeplink parameters correctly.</div>
           </div>
         </div>
@@ -476,7 +475,7 @@ code {
 
         <div class="qr-wrap" id="buyQrWrap">
           <div class="qr-row">
-            <canvas class="qr-canvas" id="buyQrCanvas" width="196" height="196"></canvas>
+            <div class="qr-container" id="buyQrContainer"></div>
             <div class="qr-help">Use QR for quick handoff to mobile, especially when you are generating links on desktop.</div>
           </div>
         </div>
@@ -497,7 +496,7 @@ code {
 
   <div class="toast" id="toast"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script>
     // ===== DATA =====
@@ -668,45 +667,39 @@ code {
       return '';
     }
 
-    function clearCanvas(canvas) {
-      if (!canvas) return;
-      var ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function clearQr(containerId) {
+      var container = getEl(containerId);
+      if (container) {
+        container.innerHTML = '';
+      }
     }
 
-    function renderQr(canvasId, wrapId, text) {
-      var canvas = getEl(canvasId);
+    function renderQr(containerId, wrapId, text) {
+      var container = getEl(containerId);
       var wrap = getEl(wrapId);
-      if (!canvas || !wrap) return;
+      if (!container || !wrap) return;
 
       if (!text) {
-        clearCanvas(canvas);
+        clearQr(containerId);
         wrap.classList.remove('show');
         return;
       }
 
       wrap.classList.add('show');
+      container.innerHTML = '';
 
       try {
-        QRCode.toCanvas(canvas, text, {
+        new QRCode(container, {
+          text: text,
           width: 196,
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          },
-          errorCorrectionLevel: 'M'
-        }, function(err) {
-          if (err) {
-            console.error('QR Error:', err);
-            showToast('QR generation failed');
-            clearCanvas(canvas);
-          }
+          height: 196,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
         });
       } catch (e) {
         console.error('QR Exception:', e);
         showToast('QR generation failed');
-        clearCanvas(canvas);
       }
     }
 
@@ -732,7 +725,7 @@ code {
         }
         output.textContent = url;
         output.classList.add('has-content');
-        renderQr('homeQrCanvas', 'homeQrWrap', url);
+        renderQr('homeQrContainer', 'homeQrWrap', url);
         showToast('Home deeplink generated!');
       });
 
@@ -741,7 +734,7 @@ code {
       qrBtn.addEventListener('click', function() {
         var url = output.textContent || '';
         if (!url) { showToast('Generate a link first'); return; }
-        renderQr('homeQrCanvas', 'homeQrWrap', url);
+        renderQr('homeQrContainer', 'homeQrWrap', url);
         showToast('QR ready');
       });
 
@@ -751,7 +744,7 @@ code {
         sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
-        renderQr('homeQrCanvas', 'homeQrWrap', '');
+        renderQr('homeQrContainer', 'homeQrWrap', '');
         showToast('Reset!');
       });
     }
@@ -843,7 +836,7 @@ code {
 
         output.textContent = url;
         output.classList.add('has-content');
-        renderQr('swapQrCanvas', 'swapQrWrap', url);
+        renderQr('swapQrContainer', 'swapQrWrap', url);
         showToast('Swap deeplink generated!');
       });
 
@@ -852,7 +845,7 @@ code {
       qrBtn.addEventListener('click', function() {
         var url = output.textContent || '';
         if (!url) { showToast('Generate a link first'); return; }
-        renderQr('swapQrCanvas', 'swapQrWrap', url);
+        renderQr('swapQrContainer', 'swapQrWrap', url);
         showToast('QR ready');
       });
 
@@ -868,7 +861,7 @@ code {
         sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
-        renderQr('swapQrCanvas', 'swapQrWrap', '');
+        renderQr('swapQrContainer', 'swapQrWrap', '');
         showToast('Reset!');
       });
     }
@@ -895,7 +888,7 @@ code {
         }
         output.textContent = url;
         output.classList.add('has-content');
-        renderQr('buyQrCanvas', 'buyQrWrap', url);
+        renderQr('buyQrContainer', 'buyQrWrap', url);
         showToast('Buy deeplink generated!');
       });
 
@@ -904,7 +897,7 @@ code {
       qrBtn.addEventListener('click', function() {
         var url = output.textContent || '';
         if (!url) { showToast('Generate a link first'); return; }
-        renderQr('buyQrCanvas', 'buyQrWrap', url);
+        renderQr('buyQrContainer', 'buyQrWrap', url);
         showToast('QR ready');
       });
 
@@ -914,16 +907,24 @@ code {
         sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
-        renderQr('buyQrCanvas', 'buyQrWrap', '');
+        renderQr('buyQrContainer', 'buyQrWrap', '');
         showToast('Reset!');
       });
     }
 
     // ===== INIT =====
     document.addEventListener('DOMContentLoaded', function() {
-      initHome();
-      initSwap();
-      initBuy();
+      // Wait a bit for QRCode library to be ready
+      setTimeout(function() {
+        if (typeof QRCode !== 'undefined') {
+          initHome();
+          initSwap();
+          initBuy();
+        } else {
+          console.error('QRCode library failed to load');
+          showToast('QR functionality unavailable');
+        }
+      }, 100);
     });
   </script>
 </body>
