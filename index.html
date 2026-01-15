@@ -455,6 +455,21 @@ code {
       <article class="card">
         <h2>💳 Buy</h2>
 
+        <div>
+          <label for="buyChainSelect">Chain</label>
+          <select id="buyChainSelect"></select>
+        </div>
+
+        <div>
+          <label for="buyTokenSelect">Token</label>
+          <select id="buyTokenSelect"></select>
+        </div>
+
+        <div>
+          <label for="buyAmountInput">Amount (optional)</label>
+          <input type="number" id="buyAmountInput" min="0" step="any" placeholder="e.g., 5">
+        </div>
+
         <div class="checkbox-row">
           <input type="checkbox" id="buySignedCheck">
           <label for="buySignedCheck">Signed deeplink?</label>
@@ -502,14 +517,14 @@ code {
     // ===== DATA =====
     var CHAINS = [
       // EVM
-      { key: 'ethereum', label: 'Ethereum', type: 'evm', ns: 'eip155', chainId: 1, slip: 60 },
-      { key: 'polygon', label: 'Polygon', type: 'evm', ns: 'eip155', chainId: 137, slip: 966 },
-      { key: 'base', label: 'Base', type: 'evm', ns: 'eip155', chainId: 8453, slip: 60 },
-      { key: 'arbitrum', label: 'Arbitrum', type: 'evm', ns: 'eip155', chainId: 42161, slip: 60 },
-      { key: 'optimism', label: 'Optimism', type: 'evm', ns: 'eip155', chainId: 10, slip: 60 },
-      { key: 'avalanche', label: 'Avalanche', type: 'evm', ns: 'eip155', chainId: 43114, slip: 9005 },
-      { key: 'bsc', label: 'BNB Chain', type: 'evm', ns: 'eip155', chainId: 56, slip: 714 },
-      { key: 'linea', label: 'Linea', type: 'evm', ns: 'eip155', chainId: 59144, slip: 60 },
+      { key: 'ethereum', label: 'Ethereum', type: 'evm', ns: 'eip155', chainId: '1', slip: 60 },
+      { key: 'polygon', label: 'Polygon', type: 'evm', ns: 'eip155', chainId: '137', slip: 966 },
+      { key: 'base', label: 'Base', type: 'evm', ns: 'eip155', chainId: '8453', slip: 60 },
+      { key: 'arbitrum', label: 'Arbitrum', type: 'evm', ns: 'eip155', chainId: '42161', slip: 60 },
+      { key: 'optimism', label: 'Optimism', type: 'evm', ns: 'eip155', chainId: '10', slip: 60 },
+      { key: 'avalanche', label: 'Avalanche', type: 'evm', ns: 'eip155', chainId: '43114', slip: 9005 },
+      { key: 'bsc', label: 'BNB Chain', type: 'evm', ns: 'eip155', chainId: '56', slip: 714 },
+      { key: 'linea', label: 'Linea', type: 'evm', ns: 'eip155', chainId: '59144', slip: 60 },
 
       // Solana
       { key: 'solana', label: 'Solana', type: 'solana', ns: 'solana', chainId: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp', slip: 501 },
@@ -517,8 +532,8 @@ code {
       // Bitcoin
       { key: 'bitcoin', label: 'Bitcoin', type: 'bitcoin', ns: 'bip122', chainId: '000000000019d6689c085ae165831e93', slip: 0 },
 
-      // Tron
-      { key: 'tron', label: 'Tron', type: 'tron', ns: 'tron', chainId: '0x2b6653dc', slip: 195 }
+      // Tron - FIXED: decimal format
+      { key: 'tron', label: 'Tron', type: 'tron', ns: 'tron', chainId: '728126428', slip: 195 }
     ];
 
     var TOKENS = {
@@ -720,9 +735,17 @@ code {
 
       genBtn.addEventListener('click', function() {
         var url = 'https://link.metamask.io/home';
+        var params = [];
+        
         if (checkbox.checked && sigInput.value.trim()) {
-          url += '?sig=' + encodeURIComponent(sigInput.value.trim());
+          params.push('sig_params=');
+          params.push('sig=' + encodeURIComponent(sigInput.value.trim()));
         }
+        
+        if (params.length > 0) {
+          url += '?' + params.join('&');
+        }
+        
         output.textContent = url;
         output.classList.add('has-content');
         renderQr('homeQrContainer', 'homeQrWrap', url);
@@ -817,22 +840,32 @@ code {
           return;
         }
 
-        var url = 'https://link.metamask.io/swap?from=' + encodeURIComponent(fromNs + '/' + fromAsset)
-                + '&to=' + encodeURIComponent(toNs + '/' + toAsset);
-
+        var params = [];
+        var sigParams = [];
+        
         var amt = amountInput.value;
         if (amt && parseFloat(amt) > 0) {
           var base = toBaseUnits(amt, ft.dec);
           if (!base) { showToast('Invalid amount'); return; }
           baseDisplay.value = base;
-          url += '&amount=' + encodeURIComponent(base);
+          params.push('amount=' + encodeURIComponent(base));
+          sigParams.push('amount');
         } else {
           baseDisplay.value = '';
         }
 
+        params.push('from=' + encodeURIComponent(fromNs + '/' + fromAsset));
+        sigParams.push('from');
+        
+        params.push('to=' + encodeURIComponent(toNs + '/' + toAsset));
+        sigParams.push('to');
+
         if (checkbox.checked && sigInput.value.trim()) {
-          url += '&sig=' + encodeURIComponent(sigInput.value.trim());
+          params.push('sig_params=' + encodeURIComponent(sigParams.join(',')));
+          params.push('sig=' + encodeURIComponent(sigInput.value.trim()));
         }
+
+        var url = 'https://link.metamask.io/swap?' + params.join('&');
 
         output.textContent = url;
         output.classList.add('has-content');
@@ -868,6 +901,9 @@ code {
 
     // ===== BUY =====
     function initBuy() {
+      var chainSelect = getEl('buyChainSelect');
+      var tokenSelect = getEl('buyTokenSelect');
+      var amountInput = getEl('buyAmountInput');
       var checkbox = getEl('buySignedCheck');
       var sigInput = getEl('buySigInput');
       var genBtn = getEl('buyGenerateBtn');
@@ -876,16 +912,60 @@ code {
       var resetBtn = getEl('buyResetBtn');
       var output = getEl('buyOutput');
 
+      populateChains(chainSelect);
+      chainSelect.value = 'ethereum';
+      populateTokens(tokenSelect, chainSelect.value);
+
+      chainSelect.addEventListener('change', function() {
+        populateTokens(tokenSelect, chainSelect.value);
+      });
+
       checkbox.addEventListener('change', function() {
         sigInput.disabled = !checkbox.checked;
         if (!checkbox.checked) sigInput.value = '';
       });
 
       genBtn.addEventListener('click', function() {
-        var url = 'https://link.metamask.io/buy';
-        if (checkbox.checked && sigInput.value.trim()) {
-          url += '?sig=' + encodeURIComponent(sigInput.value.trim());
+        var chain = getChain(chainSelect.value);
+        if (!chain) { showToast('Please select a valid chain'); return; }
+
+        var tokens = TOKENS[chainSelect.value] || [];
+        var tokenIdx = parseInt(tokenSelect.value);
+        
+        if (isNaN(tokenIdx) || !tokens[tokenIdx]) {
+          showToast('Please select a valid token');
+          return;
         }
+
+        var token = tokens[tokenIdx];
+        var ns = getNamespaceString(chain);
+        var asset = getAssetString(token);
+
+        if (!asset) {
+          showToast('Invalid asset format');
+          return;
+        }
+
+        var params = [];
+        var sigParams = [];
+
+        var amt = amountInput.value;
+        if (amt && parseFloat(amt) > 0) {
+          params.push('amount=' + encodeURIComponent(amt));
+          sigParams.push('amount');
+        }
+
+        // Buy uses assetId parameter
+        params.push('assetId=' + encodeURIComponent(ns + '/' + asset));
+        sigParams.push('assetId');
+
+        if (checkbox.checked && sigInput.value.trim()) {
+          params.push('sig_params=' + encodeURIComponent(sigParams.join(',')));
+          params.push('sig=' + encodeURIComponent(sigInput.value.trim()));
+        }
+
+        var url = 'https://link.metamask.io/buy?' + params.join('&');
+
         output.textContent = url;
         output.classList.add('has-content');
         renderQr('buyQrContainer', 'buyQrWrap', url);
@@ -902,6 +982,9 @@ code {
       });
 
       resetBtn.addEventListener('click', function() {
+        chainSelect.value = 'ethereum';
+        populateTokens(tokenSelect, 'ethereum');
+        amountInput.value = '';
         checkbox.checked = false;
         sigInput.disabled = true;
         sigInput.value = '';
@@ -914,7 +997,6 @@ code {
 
     // ===== INIT =====
     document.addEventListener('DOMContentLoaded', function() {
-      // Wait a bit for QRCode library to be ready
       setTimeout(function() {
         if (typeof QRCode !== 'undefined') {
           initHome();
