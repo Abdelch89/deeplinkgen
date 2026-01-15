@@ -533,8 +533,7 @@ code {
         { sym: 'USDC', type: 'erc20', addr: '0x176211869cA2b568f2A7D4EE941E073a821EE1ff', dec: 6 }
       ],
       solana: [
-        { sym: 'SOL (Native)', type: 'native', addr: 'native', dec: 9 },
-        { sym: 'SOL (Wrapped)', type: 'slip44', addr: '501', dec: 9 },
+        { sym: 'SOL', type: 'slip44', addr: '501', dec: 9 },
         { sym: 'USDC', type: 'spl', addr: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6 },
         { sym: 'USDT', type: 'spl', addr: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6 }
       ],
@@ -630,8 +629,13 @@ code {
       return chain.ns + ':' + chain.chainId;
     }
 
-    function getAssetString(token) {
-      if (token.type === 'native') return 'native';
+    function getAssetString(token, context) {
+      // For swap with native type, use 'native'
+      // For buy with native type, use slip44
+      if (token.type === 'native') {
+        if (context === 'swap') return 'native';
+        if (context === 'buy') return 'slip44:' + token.addr;
+      }
       if (token.type === 'slip44') return 'slip44:' + token.addr;
       if (token.type === 'erc20') return 'erc20:' + token.addr;
       if (token.type === 'spl') return 'spl:' + token.addr;
@@ -761,8 +765,8 @@ code {
         var fromNs = getNamespaceString(fc);
         var toNs = getNamespaceString(tc);
 
-        var fromAsset = getAssetString(ft);
-        var toAsset = getAssetString(tt);
+        var fromAsset = getAssetString(ft, 'swap');
+        var toAsset = getAssetString(tt, 'swap');
 
         if (!fromAsset || !toAsset) {
           showToast('Invalid asset format for selected tokens');
@@ -848,7 +852,7 @@ code {
 
         var token = tokens[tokenIdx];
         var ns = getNamespaceString(chain);
-        var asset = getAssetString(token);
+        var asset = getAssetString(token, 'buy');
 
         if (!asset) {
           showToast('Invalid asset format');
