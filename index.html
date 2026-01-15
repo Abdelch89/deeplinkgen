@@ -173,6 +173,37 @@ input:disabled, textarea:disabled {
   gap: 12px;
 }
 
+.input-with-toggle {
+  position: relative;
+}
+
+.currency-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.currency-toggle:hover {
+  background: var(--mm-blue-hover);
+}
+
+.conversion-info {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-style: italic;
+}
+
 .btn {
   display: inline-flex;
   gap: 8px;
@@ -410,7 +441,7 @@ code {
 
   <main class="wrap">
     <section class="intro">
-      <p>Generate deeplinks for MetaMask Home, Swap, Buy, and Predict Markets. Select your parameters and click Generate. Supports EVM, Solana, Bitcoin, and Tron.</p>
+      <p>Generate deeplinks for MetaMask Home, Swap, Buy, and Predict Markets. Select your parameters and click Generate. Supports EVM, Solana, Bitcoin, and Tron. <strong>Now with live USD conversion!</strong></p>
     </section>
 
     <section class="grid">
@@ -466,7 +497,11 @@ code {
         <div class="row">
           <div>
             <label for="amountInput">Amount</label>
-            <input type="number" id="amountInput" min="0" step="any" placeholder="e.g., 1.5">
+            <div class="input-with-toggle">
+              <input type="number" id="amountInput" min="0" step="any" placeholder="e.g., 1.5">
+              <button type="button" class="currency-toggle" id="swapCurrencyToggle">USD</button>
+            </div>
+            <div class="conversion-info" id="swapConversionInfo"></div>
           </div>
           <div>
             <label>Base Units (auto)</label>
@@ -510,7 +545,11 @@ code {
 
         <div>
           <label for="buyAmountInput">Amount (optional)</label>
-          <input type="number" id="buyAmountInput" min="0" step="any" placeholder="e.g., 5">
+          <div class="input-with-toggle">
+            <input type="number" id="buyAmountInput" min="0" step="any" placeholder="e.g., 5">
+            <button type="button" class="currency-toggle" id="buyCurrencyToggle">USD</button>
+          </div>
+          <div class="conversion-info" id="buyConversionInfo"></div>
         </div>
 
         <div class="btn-group">
@@ -579,6 +618,7 @@ code {
         <li><strong>Routing:</strong> Desktop with Extension → opens Extension. Mobile with app → opens app. Otherwise → download page.</li>
         <li><strong>Versions:</strong> Home: Ext ≥12.23.0, Mobile ≥7.51.0 | Swap: Ext ≥13.0.0, Mobile ≥7.51.0 | Predict: Latest versions</li>
         <li><strong>Predict Markets:</strong> Uses Polymarket's Gamma API to fetch market IDs. Requires valid market slug or direct ID.</li>
+        <li><strong>USD Conversion:</strong> Live prices from CoinGecko API. Click USD/Crypto toggle to switch input mode.</li>
       </ul>
     </section>
   </main>
@@ -612,59 +652,63 @@ code {
 
     var TOKENS = {
       ethereum: [
-        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
-        { sym: 'USDC', type: 'erc20', addr: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', dec: 6 },
-        { sym: 'USDT', type: 'erc20', addr: '0xdAC17F958D2ee523a2206206994597C13D831ec7', dec: 6 },
-        { sym: 'DAI', type: 'erc20', addr: '0x6B175474E89094C44Da98b954EedeAC495271d0F', dec: 18 },
-        { sym: 'WETH', type: 'erc20', addr: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', dec: 18 },
-        { sym: 'WBTC', type: 'erc20', addr: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', dec: 8 }
+        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18, coingeckoId: 'ethereum' },
+        { sym: 'USDC', type: 'erc20', addr: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', dec: 6, coingeckoId: 'usd-coin' },
+        { sym: 'USDT', type: 'erc20', addr: '0xdAC17F958D2ee523a2206206994597C13D831ec7', dec: 6, coingeckoId: 'tether' },
+        { sym: 'DAI', type: 'erc20', addr: '0x6B175474E89094C44Da98b954EedeAC495271d0F', dec: 18, coingeckoId: 'dai' },
+        { sym: 'WETH', type: 'erc20', addr: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', dec: 18, coingeckoId: 'weth' },
+        { sym: 'WBTC', type: 'erc20', addr: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', dec: 8, coingeckoId: 'wrapped-bitcoin' }
       ],
       polygon: [
-        { sym: 'POL', type: 'slip44', addr: '966', dec: 18 },
-        { sym: 'USDC', type: 'erc20', addr: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', dec: 6 },
-        { sym: 'USDT', type: 'erc20', addr: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', dec: 6 },
-        { sym: 'WETH', type: 'erc20', addr: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', dec: 18 }
+        { sym: 'POL', type: 'slip44', addr: '966', dec: 18, coingeckoId: 'matic-network' },
+        { sym: 'USDC', type: 'erc20', addr: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', dec: 6, coingeckoId: 'usd-coin' },
+        { sym: 'USDT', type: 'erc20', addr: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', dec: 6, coingeckoId: 'tether' },
+        { sym: 'WETH', type: 'erc20', addr: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', dec: 18, coingeckoId: 'weth' }
       ],
       base: [
-        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
-        { sym: 'USDC', type: 'erc20', addr: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', dec: 6 }
+        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18, coingeckoId: 'ethereum' },
+        { sym: 'USDC', type: 'erc20', addr: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', dec: 6, coingeckoId: 'usd-coin' }
       ],
       arbitrum: [
-        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
-        { sym: 'USDC', type: 'erc20', addr: '0xAf88d065e77c8cC2239327C5EDb3A432268e5831', dec: 6 },
-        { sym: 'ARB', type: 'erc20', addr: '0x912CE59144191C1204E64559FE8253a0e49E6548', dec: 18 }
+        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18, coingeckoId: 'ethereum' },
+        { sym: 'USDC', type: 'erc20', addr: '0xAf88d065e77c8cC2239327C5EDb3A432268e5831', dec: 6, coingeckoId: 'usd-coin' },
+        { sym: 'ARB', type: 'erc20', addr: '0x912CE59144191C1204E64559FE8253a0e49E6548', dec: 18, coingeckoId: 'arbitrum' }
       ],
       optimism: [
-        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
-        { sym: 'USDC', type: 'erc20', addr: '0x0b2c639c533813f4aa9d7837caf62653d097ff85', dec: 6 },
-        { sym: 'OP', type: 'erc20', addr: '0x4200000000000000000000000000000000000042', dec: 18 }
+        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18, coingeckoId: 'ethereum' },
+        { sym: 'USDC', type: 'erc20', addr: '0x0b2c639c533813f4aa9d7837caf62653d097ff85', dec: 6, coingeckoId: 'usd-coin' },
+        { sym: 'OP', type: 'erc20', addr: '0x4200000000000000000000000000000000000042', dec: 18, coingeckoId: 'optimism' }
       ],
       avalanche: [
-        { sym: 'AVAX', type: 'slip44', addr: '9005', dec: 18 },
-        { sym: 'USDC', type: 'erc20', addr: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', dec: 6 }
+        { sym: 'AVAX', type: 'slip44', addr: '9005', dec: 18, coingeckoId: 'avalanche-2' },
+        { sym: 'USDC', type: 'erc20', addr: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', dec: 6, coingeckoId: 'usd-coin' }
       ],
       bsc: [
-        { sym: 'BNB', type: 'slip44', addr: '714', dec: 18 },
-        { sym: 'USDT', type: 'erc20', addr: '0x55d398326f99059fF775485246999027B3197955', dec: 18 }
+        { sym: 'BNB', type: 'slip44', addr: '714', dec: 18, coingeckoId: 'binancecoin' },
+        { sym: 'USDT', type: 'erc20', addr: '0x55d398326f99059fF775485246999027B3197955', dec: 18, coingeckoId: 'tether' }
       ],
       linea: [
-        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18 },
-        { sym: 'USDC', type: 'erc20', addr: '0x176211869cA2b568f2A7D4EE941E073a821EE1ff', dec: 6 }
+        { sym: 'ETH', type: 'slip44', addr: '60', dec: 18, coingeckoId: 'ethereum' },
+        { sym: 'USDC', type: 'erc20', addr: '0x176211869cA2b568f2A7D4EE941E073a821EE1ff', dec: 6, coingeckoId: 'usd-coin' }
       ],
       solana: [
-        { sym: 'SOL', type: 'slip44', addr: '501', dec: 9 },
-        { sym: 'USDC', type: 'spl', addr: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6 },
-        { sym: 'USDT', type: 'spl', addr: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6 }
+        { sym: 'SOL', type: 'slip44', addr: '501', dec: 9, coingeckoId: 'solana' },
+        { sym: 'USDC', type: 'spl', addr: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6, coingeckoId: 'usd-coin' },
+        { sym: 'USDT', type: 'spl', addr: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6, coingeckoId: 'tether' }
       ],
       bitcoin: [
-        { sym: 'BTC', type: 'slip44', addr: '0', dec: 8 }
+        { sym: 'BTC', type: 'slip44', addr: '0', dec: 8, coingeckoId: 'bitcoin' }
       ],
       tron: [
-        { sym: 'TRX', type: 'slip44', addr: '195', dec: 6 },
-        { sym: 'USDT', type: 'trc20', addr: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', dec: 6 },
-        { sym: 'USDC', type: 'trc20', addr: 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8', dec: 6 }
+        { sym: 'TRX', type: 'slip44', addr: '195', dec: 6, coingeckoId: 'tron' },
+        { sym: 'USDT', type: 'trc20', addr: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', dec: 6, coingeckoId: 'tether' },
+        { sym: 'USDC', type: 'trc20', addr: 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8', dec: 6, coingeckoId: 'usd-coin' }
       ]
     };
+
+    // Price cache
+    var priceCache = {};
+    var cacheTimeout = 60000; // 1 minute
 
     // ===== HELPERS =====
     function getEl(id) { return document.getElementById(id); }
@@ -796,6 +840,52 @@ code {
       }
     }
 
+    // ===== PRICE API =====
+    async function fetchCryptoPrice(coingeckoId) {
+      try {
+        // Check cache
+        var now = Date.now();
+        if (priceCache[coingeckoId] && (now - priceCache[coingeckoId].timestamp < cacheTimeout)) {
+          return priceCache[coingeckoId].price;
+        }
+
+        // Fetch from CoinGecko
+        var apiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=' + coingeckoId + '&vs_currencies=usd';
+        var response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+          throw new Error('Price fetch failed');
+        }
+        
+        var data = await response.json();
+        
+        if (data && data[coingeckoId] && data[coingeckoId].usd) {
+          var price = data[coingeckoId].usd;
+          // Cache the price
+          priceCache[coingeckoId] = {
+            price: price,
+            timestamp: now
+          };
+          return price;
+        } else {
+          throw new Error('Price not found');
+        }
+      } catch (error) {
+        console.error('Price fetch error:', error);
+        return null;
+      }
+    }
+
+    function convertUsdToCrypto(usdAmount, cryptoPrice) {
+      if (!cryptoPrice || cryptoPrice === 0) return null;
+      return usdAmount / cryptoPrice;
+    }
+
+    function convertCryptoToUsd(cryptoAmount, cryptoPrice) {
+      if (!cryptoPrice) return null;
+      return cryptoAmount * cryptoPrice;
+    }
+
     // ===== POLYMARKET API =====
     function extractSlugFromUrl(url) {
       try {
@@ -890,11 +980,15 @@ code {
       var toToken = getEl('toTokenSelect');
       var amountInput = getEl('amountInput');
       var baseDisplay = getEl('baseUnitsDisplay');
+      var currencyToggle = getEl('swapCurrencyToggle');
+      var conversionInfo = getEl('swapConversionInfo');
       var genBtn = getEl('swapGenerateBtn');
       var copyBtn = getEl('swapCopyBtn');
       var qrBtn = getEl('swapQrBtn');
       var resetBtn = getEl('swapResetBtn');
       var output = getEl('swapOutput');
+
+      var isUsdMode = false;
 
       populateChains(fromChain);
       populateChains(toChain);
@@ -913,7 +1007,42 @@ code {
         populateTokens(toToken, toChain.value);
       });
 
-      genBtn.addEventListener('click', function() {
+      currencyToggle.addEventListener('click', function() {
+        isUsdMode = !isUsdMode;
+        currencyToggle.textContent = isUsdMode ? 'Crypto' : 'USD';
+        amountInput.placeholder = isUsdMode ? 'e.g., 100 (USD)' : 'e.g., 1.5';
+        conversionInfo.textContent = '';
+        amountInput.value = '';
+      });
+
+      amountInput.addEventListener('input', async function() {
+        if (!amountInput.value || !isUsdMode) {
+          conversionInfo.textContent = '';
+          return;
+        }
+
+        var ftTokens = TOKENS[fromChain.value] || [];
+        var ftIdx = parseInt(fromToken.value);
+        if (isNaN(ftIdx) || !ftTokens[ftIdx] || !ftTokens[ftIdx].coingeckoId) {
+          conversionInfo.textContent = '';
+          return;
+        }
+
+        var token = ftTokens[ftIdx];
+        conversionInfo.textContent = 'Fetching price...';
+        
+        var price = await fetchCryptoPrice(token.coingeckoId);
+        if (price) {
+          var cryptoAmount = convertUsdToCrypto(parseFloat(amountInput.value), price);
+          if (cryptoAmount) {
+            conversionInfo.textContent = '≈ ' + cryptoAmount.toFixed(6) + ' ' + token.sym + ' ($' + price.toLocaleString() + ' per ' + token.sym + ')';
+          }
+        } else {
+          conversionInfo.textContent = 'Price unavailable';
+        }
+      });
+
+      genBtn.addEventListener('click', async function() {
         var fc = getChain(fromChain.value);
         var tc = getChain(toChain.value);
         if (!fc || !tc) { showToast('Please select valid chains'); return; }
@@ -947,7 +1076,20 @@ code {
         
         var amt = amountInput.value;
         if (amt && parseFloat(amt) > 0) {
-          var base = toBaseUnits(amt, ft.dec);
+          var actualAmount = amt;
+          
+          // Convert USD to crypto if in USD mode
+          if (isUsdMode && ft.coingeckoId) {
+            var price = await fetchCryptoPrice(ft.coingeckoId);
+            if (price) {
+              actualAmount = convertUsdToCrypto(parseFloat(amt), price);
+            } else {
+              showToast('Could not fetch price. Try crypto mode.');
+              return;
+            }
+          }
+          
+          var base = toBaseUnits(actualAmount, ft.dec);
           if (!base) { showToast('Invalid amount'); return; }
           baseDisplay.value = base;
           params.push('amount=' + encodeURIComponent(base));
@@ -982,6 +1124,9 @@ code {
         populateTokens(toToken, 'polygon');
         amountInput.value = '';
         baseDisplay.value = '';
+        conversionInfo.textContent = '';
+        isUsdMode = false;
+        currencyToggle.textContent = 'USD';
         output.textContent = '';
         output.classList.remove('has-content');
         renderQr('swapQrContainer', 'swapQrWrap', '');
@@ -994,11 +1139,15 @@ code {
       var chainSelect = getEl('buyChainSelect');
       var tokenSelect = getEl('buyTokenSelect');
       var amountInput = getEl('buyAmountInput');
+      var currencyToggle = getEl('buyCurrencyToggle');
+      var conversionInfo = getEl('buyConversionInfo');
       var genBtn = getEl('buyGenerateBtn');
       var copyBtn = getEl('buyCopyBtn');
       var qrBtn = getEl('buyQrBtn');
       var resetBtn = getEl('buyResetBtn');
       var output = getEl('buyOutput');
+
+      var isUsdMode = false;
 
       populateChains(chainSelect);
       chainSelect.value = 'ethereum';
@@ -1008,7 +1157,42 @@ code {
         populateTokens(tokenSelect, chainSelect.value);
       });
 
-      genBtn.addEventListener('click', function() {
+      currencyToggle.addEventListener('click', function() {
+        isUsdMode = !isUsdMode;
+        currencyToggle.textContent = isUsdMode ? 'Crypto' : 'USD';
+        amountInput.placeholder = isUsdMode ? 'e.g., 100 (USD)' : 'e.g., 5';
+        conversionInfo.textContent = '';
+        amountInput.value = '';
+      });
+
+      amountInput.addEventListener('input', async function() {
+        if (!amountInput.value || !isUsdMode) {
+          conversionInfo.textContent = '';
+          return;
+        }
+
+        var tokens = TOKENS[chainSelect.value] || [];
+        var tokenIdx = parseInt(tokenSelect.value);
+        if (isNaN(tokenIdx) || !tokens[tokenIdx] || !tokens[tokenIdx].coingeckoId) {
+          conversionInfo.textContent = '';
+          return;
+        }
+
+        var token = tokens[tokenIdx];
+        conversionInfo.textContent = 'Fetching price...';
+        
+        var price = await fetchCryptoPrice(token.coingeckoId);
+        if (price) {
+          var cryptoAmount = convertUsdToCrypto(parseFloat(amountInput.value), price);
+          if (cryptoAmount) {
+            conversionInfo.textContent = '≈ ' + cryptoAmount.toFixed(6) + ' ' + token.sym + ' ($' + price.toLocaleString() + ' per ' + token.sym + ')';
+          }
+        } else {
+          conversionInfo.textContent = 'Price unavailable';
+        }
+      });
+
+      genBtn.addEventListener('click', async function() {
         var chain = getChain(chainSelect.value);
         if (!chain) { showToast('Please select a valid chain'); return; }
 
@@ -1033,7 +1217,20 @@ code {
 
         var amt = amountInput.value;
         if (amt && parseFloat(amt) > 0) {
-          params.push('amount=' + encodeURIComponent(amt));
+          var actualAmount = amt;
+          
+          // Convert USD to crypto if in USD mode
+          if (isUsdMode && token.coingeckoId) {
+            var price = await fetchCryptoPrice(token.coingeckoId);
+            if (price) {
+              actualAmount = convertUsdToCrypto(parseFloat(amt), price);
+            } else {
+              showToast('Could not fetch price. Try crypto mode.');
+              return;
+            }
+          }
+          
+          params.push('amount=' + encodeURIComponent(actualAmount));
         }
 
         params.push('assetId=' + encodeURIComponent(ns + '/' + asset));
@@ -1059,6 +1256,9 @@ code {
         chainSelect.value = 'ethereum';
         populateTokens(tokenSelect, 'ethereum');
         amountInput.value = '';
+        conversionInfo.textContent = '';
+        isUsdMode = false;
+        currencyToggle.textContent = 'USD';
         output.textContent = '';
         output.classList.remove('has-content');
         renderQr('buyQrContainer', 'buyQrWrap', '');
@@ -1081,7 +1281,6 @@ code {
         var urlOrSlug = urlInput.value.trim();
         var directId = idInput.value.trim();
 
-        // If user provided ID directly, use it
         if (directId) {
           var url = 'https://link.metamask.io/predict?marketId=' + encodeURIComponent(directId);
           output.textContent = url;
@@ -1093,25 +1292,21 @@ code {
           return;
         }
 
-        // Otherwise try to extract slug and fetch
         if (!urlOrSlug) {
           showToast('Please enter a Polymarket URL or Market ID');
           return;
         }
 
-        // Show loading
         genBtn.disabled = true;
         genBtn.innerHTML = '<span class="loading"></span> Fetching...';
         resultDiv.classList.remove('show');
 
         try {
-          // Extract slug from URL
           var slug = extractSlugFromUrl(urlOrSlug);
           
           resultDiv.innerHTML = '<strong>Extracted Slug:</strong> ' + slug + '<br><span class="loading"></span> Fetching market data...';
           resultDiv.classList.add('show');
 
-          // Fetch market ID
           var marketData = await fetchMarketId(slug);
           
           resultDiv.innerHTML = '<strong>Market Found!</strong><br>' +
