@@ -441,7 +441,7 @@ code {
 
   <main class="wrap">
     <section class="intro">
-      <p>Generate deeplinks for MetaMask Home, Swap, Buy, and Predict Markets. Select your parameters and click Generate. Supports EVM, Solana, Bitcoin, and Tron. <strong>Now with live USD conversion!</strong></p>
+      <p>Generate deeplinks for MetaMask Home, Swap, Buy, and Predict Markets. Select your parameters and click Generate. Supports EVM, Solana, Bitcoin, and Tron. <strong>Now with live USD conversion and mUSD support!</strong></p>
     </section>
 
     <section class="grid">
@@ -619,6 +619,7 @@ code {
         <li><strong>Versions:</strong> Home: Ext ≥12.23.0, Mobile ≥7.51.0 | Swap: Ext ≥13.0.0, Mobile ≥7.51.0 | Predict: Latest versions</li>
         <li><strong>Predict Markets:</strong> Uses Polymarket's Gamma API to fetch market IDs. Requires valid market slug or direct ID.</li>
         <li><strong>USD Conversion:</strong> Live prices from CoinGecko API. Click USD/Crypto toggle to switch input mode.</li>
+        <li><strong>mUSD:</strong> MetaMask USD stablecoin available on Ethereum network.</li>
       </ul>
     </section>
   </main>
@@ -653,6 +654,7 @@ code {
     var TOKENS = {
       ethereum: [
         { sym: 'ETH', type: 'slip44', addr: '60', dec: 18, coingeckoId: 'ethereum' },
+        { sym: 'mUSD', type: 'erc20', addr: '0xacA92E438df0B2401fF60dA7E4337B687a2435DA', dec: 8, coingeckoId: 'usd-coin' },
         { sym: 'USDC', type: 'erc20', addr: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', dec: 6, coingeckoId: 'usd-coin' },
         { sym: 'USDT', type: 'erc20', addr: '0xdAC17F958D2ee523a2206206994597C13D831ec7', dec: 6, coingeckoId: 'tether' },
         { sym: 'DAI', type: 'erc20', addr: '0x6B175474E89094C44Da98b954EedeAC495271d0F', dec: 18, coingeckoId: 'dai' },
@@ -843,13 +845,11 @@ code {
     // ===== PRICE API =====
     async function fetchCryptoPrice(coingeckoId) {
       try {
-        // Check cache
         var now = Date.now();
         if (priceCache[coingeckoId] && (now - priceCache[coingeckoId].timestamp < cacheTimeout)) {
           return priceCache[coingeckoId].price;
         }
 
-        // Fetch from CoinGecko
         var apiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=' + coingeckoId + '&vs_currencies=usd';
         var response = await fetch(apiUrl);
         
@@ -861,7 +861,6 @@ code {
         
         if (data && data[coingeckoId] && data[coingeckoId].usd) {
           var price = data[coingeckoId].usd;
-          // Cache the price
           priceCache[coingeckoId] = {
             price: price,
             timestamp: now
@@ -1078,7 +1077,6 @@ code {
         if (amt && parseFloat(amt) > 0) {
           var actualAmount = amt;
           
-          // Convert USD to crypto if in USD mode
           if (isUsdMode && ft.coingeckoId) {
             var price = await fetchCryptoPrice(ft.coingeckoId);
             if (price) {
@@ -1219,7 +1217,6 @@ code {
         if (amt && parseFloat(amt) > 0) {
           var actualAmount = amt;
           
-          // Convert USD to crypto if in USD mode
           if (isUsdMode && token.coingeckoId) {
             var price = await fetchCryptoPrice(token.coingeckoId);
             if (price) {
