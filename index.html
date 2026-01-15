@@ -197,6 +197,11 @@ input:disabled, textarea:disabled {
   background: var(--mm-blue-hover);
 }
 
+.currency-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .conversion-info {
   font-size: 11px;
   color: var(--muted);
@@ -619,7 +624,7 @@ code {
         <li><strong>Versions:</strong> Home: Ext ≥12.23.0, Mobile ≥7.51.0 | Swap: Ext ≥13.0.0, Mobile ≥7.51.0 | Predict: Latest versions</li>
         <li><strong>Predict Markets:</strong> Uses Polymarket's Gamma API to fetch market IDs. Requires valid market slug or direct ID.</li>
         <li><strong>USD Conversion:</strong> Live prices from CoinGecko API. Click USD/Crypto toggle to switch input mode.</li>
-        <li><strong>mUSD:</strong> MetaMask USD stablecoin available on Ethereum network (18 decimals).</li>
+        <li><strong>mUSD:</strong> MetaMask USD stablecoin - crypto amounts only (no USD conversion).</li>
       </ul>
     </section>
   </main>
@@ -998,8 +1003,44 @@ code {
       populateTokens(fromToken, fromChain.value);
       populateTokens(toToken, toChain.value);
 
+      // Check if mUSD is selected and disable USD mode
+      function checkMusdSelected() {
+        var ftTokens = TOKENS[fromChain.value] || [];
+        var ftIdx = parseInt(fromToken.value);
+        if (!isNaN(ftIdx) && ftTokens[ftIdx] && ftTokens[ftIdx].sym === 'mUSD') {
+          // mUSD selected - force crypto mode
+          if (isUsdMode) {
+            isUsdMode = false;
+            currencyToggle.textContent = 'USD';
+            amountInput.placeholder = 'e.g., 1.5';
+            conversionInfo.textContent = '';
+            amountInput.value = '';
+          }
+          currencyToggle.disabled = true;
+          currencyToggle.style.opacity = '0.5';
+          currencyToggle.style.cursor = 'not-allowed';
+          conversionInfo.textContent = 'mUSD: Crypto amounts only';
+          conversionInfo.style.color = 'var(--mm-orange)';
+        } else {
+          currencyToggle.disabled = false;
+          currencyToggle.style.opacity = '1';
+          currencyToggle.style.cursor = 'pointer';
+          if (!isUsdMode) {
+            conversionInfo.textContent = '';
+            conversionInfo.style.color = 'var(--muted)';
+          }
+        }
+      }
+
       fromChain.addEventListener('change', function() {
         populateTokens(fromToken, fromChain.value);
+        checkMusdSelected();
+      });
+
+      fromToken.addEventListener('change', function() {
+        checkMusdSelected();
+        amountInput.value = '';
+        conversionInfo.textContent = '';
       });
 
       toChain.addEventListener('change', function() {
@@ -1007,6 +1048,8 @@ code {
       });
 
       currencyToggle.addEventListener('click', function() {
+        if (currencyToggle.disabled) return;
+        
         isUsdMode = !isUsdMode;
         currencyToggle.textContent = isUsdMode ? 'Crypto' : 'USD';
         amountInput.placeholder = isUsdMode ? 'e.g., 100 (USD)' : 'e.g., 1.5';
@@ -1016,6 +1059,15 @@ code {
 
       amountInput.addEventListener('input', async function() {
         if (!amountInput.value || !isUsdMode) {
+          if (!isUsdMode) {
+            var ftTokens = TOKENS[fromChain.value] || [];
+            var ftIdx = parseInt(fromToken.value);
+            if (!isNaN(ftIdx) && ftTokens[ftIdx] && ftTokens[ftIdx].sym === 'mUSD') {
+              conversionInfo.textContent = 'mUSD: Crypto amounts only';
+              conversionInfo.style.color = 'var(--mm-orange)';
+              return;
+            }
+          }
           conversionInfo.textContent = '';
           return;
         }
@@ -1035,6 +1087,7 @@ code {
           var cryptoAmount = convertUsdToCrypto(parseFloat(amountInput.value), price);
           if (cryptoAmount) {
             conversionInfo.textContent = '≈ ' + cryptoAmount.toFixed(6) + ' ' + token.sym + ' ($' + price.toLocaleString() + ' per ' + token.sym + ')';
+            conversionInfo.style.color = 'var(--muted)';
           }
         } else {
           conversionInfo.textContent = 'Price unavailable';
@@ -1077,7 +1130,8 @@ code {
         if (amt && parseFloat(amt) > 0) {
           var actualAmount = amt;
           
-          if (isUsdMode && ft.coingeckoId) {
+          // Skip USD conversion for mUSD
+          if (isUsdMode && ft.sym !== 'mUSD' && ft.coingeckoId) {
             var price = await fetchCryptoPrice(ft.coingeckoId);
             if (price) {
               actualAmount = convertUsdToCrypto(parseFloat(amt), price);
@@ -1125,11 +1179,17 @@ code {
         conversionInfo.textContent = '';
         isUsdMode = false;
         currencyToggle.textContent = 'USD';
+        currencyToggle.disabled = false;
+        currencyToggle.style.opacity = '1';
+        currencyToggle.style.cursor = 'pointer';
         output.textContent = '';
         output.classList.remove('has-content');
         renderQr('swapQrContainer', 'swapQrWrap', '');
         showToast('Reset!');
       });
+
+      // Initial check
+      checkMusdSelected();
     }
 
     // ===== BUY =====
