@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Generate secure MetaMask deeplinks for Home, Swap, and Buy with optional signing and pre-filled parameters.">
+  <meta name="description" content="Generate MetaMask deeplinks for Home, Swap, and Buy with pre-filled parameters.">
   <title>MetaMask Deeplink Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -220,23 +220,6 @@ input:disabled {
   background: var(--card);
 }
 
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.checkbox-row input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.checkbox-row label { margin: 0; cursor: pointer; }
-
-.sig-input { margin-top: 8px; }
-
 .warn {
   color: var(--mm-orange);
   font-size: 12px;
@@ -349,22 +332,13 @@ code {
 
   <main class="wrap">
     <section class="intro">
-      <p>Generate secure deeplinks for MetaMask Home, Swap, and Buy features. Select your parameters and click Generate. Swap now includes EVM, Solana, Bitcoin, and Tron formatting.</p>
+      <p>Generate deeplinks for MetaMask Home, Swap, and Buy features. Select your parameters and click Generate. Swap now includes EVM, Solana, Bitcoin, and Tron formatting.</p>
     </section>
 
     <section class="grid">
       <!-- HOME CARD -->
       <article class="card">
         <h2>🏠 Home</h2>
-
-        <div class="checkbox-row">
-          <input type="checkbox" id="homeSignedCheck">
-          <label for="homeSignedCheck">Signed deeplink?</label>
-        </div>
-
-        <div class="sig-input">
-          <input type="text" id="homeSigInput" placeholder="Paste signature here..." disabled>
-        </div>
 
         <div class="btn-group">
           <button type="button" class="btn btn-primary" id="homeGenerateBtn">Generate</button>
@@ -422,15 +396,6 @@ code {
           </div>
         </div>
 
-        <div class="checkbox-row">
-          <input type="checkbox" id="swapSignedCheck">
-          <label for="swapSignedCheck">Signed deeplink?</label>
-        </div>
-
-        <div class="sig-input">
-          <input type="text" id="swapSigInput" placeholder="Paste signature here..." disabled>
-        </div>
-
         <div class="btn-group">
           <button type="button" class="btn btn-primary" id="swapGenerateBtn">Generate</button>
           <button type="button" class="btn btn-copy" id="swapCopyBtn">Copy</button>
@@ -470,15 +435,6 @@ code {
           <input type="number" id="buyAmountInput" min="0" step="any" placeholder="e.g., 5">
         </div>
 
-        <div class="checkbox-row">
-          <input type="checkbox" id="buySignedCheck">
-          <label for="buySignedCheck">Signed deeplink?</label>
-        </div>
-
-        <div class="sig-input">
-          <input type="text" id="buySigInput" placeholder="Paste signature here..." disabled>
-        </div>
-
         <div class="btn-group">
           <button type="button" class="btn btn-primary" id="buyGenerateBtn">Generate</button>
           <button type="button" class="btn btn-copy" id="buyCopyBtn">Copy</button>
@@ -503,7 +459,6 @@ code {
       <h3>📋 Important Information</h3>
       <ul>
         <li><strong>Routing:</strong> Desktop with Extension → opens Extension. Mobile with app → opens app. Otherwise → download page.</li>
-        <li><strong>Signed links:</strong> Skip the "Proceed with caution" warning. Recommended for official use.</li>
         <li><strong>Versions:</strong> Home: Ext ≥12.23.0, Mobile ≥7.51.0 | Swap: Ext ≥13.0.0, Mobile ≥7.51.0</li>
       </ul>
     </section>
@@ -532,7 +487,7 @@ code {
       // Bitcoin
       { key: 'bitcoin', label: 'Bitcoin', type: 'bitcoin', ns: 'bip122', chainId: '000000000019d6689c085ae165831e93', slip: 0 },
 
-      // Tron - FIXED: decimal format
+      // Tron
       { key: 'tron', label: 'Tron', type: 'tron', ns: 'tron', chainId: '728126428', slip: 195 }
     ];
 
@@ -578,7 +533,8 @@ code {
         { sym: 'USDC', type: 'erc20', addr: '0x176211869cA2b568f2A7D4EE941E073a821EE1ff', dec: 6 }
       ],
       solana: [
-        { sym: 'SOL', type: 'slip44', addr: '501', dec: 9 },
+        { sym: 'SOL (Native)', type: 'native', addr: 'native', dec: 9 },
+        { sym: 'SOL (Wrapped)', type: 'slip44', addr: '501', dec: 9 },
         { sym: 'USDC', type: 'spl', addr: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', dec: 6 },
         { sym: 'USDT', type: 'spl', addr: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', dec: 6 }
       ],
@@ -675,6 +631,7 @@ code {
     }
 
     function getAssetString(token) {
+      if (token.type === 'native') return 'native';
       if (token.type === 'slip44') return 'slip44:' + token.addr;
       if (token.type === 'erc20') return 'erc20:' + token.addr;
       if (token.type === 'spl') return 'spl:' + token.addr;
@@ -720,32 +677,14 @@ code {
 
     // ===== HOME =====
     function initHome() {
-      var checkbox = getEl('homeSignedCheck');
-      var sigInput = getEl('homeSigInput');
       var genBtn = getEl('homeGenerateBtn');
       var copyBtn = getEl('homeCopyBtn');
       var qrBtn = getEl('homeQrBtn');
       var resetBtn = getEl('homeResetBtn');
       var output = getEl('homeOutput');
 
-      checkbox.addEventListener('change', function() {
-        sigInput.disabled = !checkbox.checked;
-        if (!checkbox.checked) sigInput.value = '';
-      });
-
       genBtn.addEventListener('click', function() {
         var url = 'https://link.metamask.io/home';
-        var params = [];
-        
-        if (checkbox.checked && sigInput.value.trim()) {
-          params.push('sig_params=');
-          params.push('sig=' + encodeURIComponent(sigInput.value.trim()));
-        }
-        
-        if (params.length > 0) {
-          url += '?' + params.join('&');
-        }
-        
         output.textContent = url;
         output.classList.add('has-content');
         renderQr('homeQrContainer', 'homeQrWrap', url);
@@ -762,9 +701,6 @@ code {
       });
 
       resetBtn.addEventListener('click', function() {
-        checkbox.checked = false;
-        sigInput.disabled = true;
-        sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
         renderQr('homeQrContainer', 'homeQrWrap', '');
@@ -780,8 +716,6 @@ code {
       var toToken = getEl('toTokenSelect');
       var amountInput = getEl('amountInput');
       var baseDisplay = getEl('baseUnitsDisplay');
-      var checkbox = getEl('swapSignedCheck');
-      var sigInput = getEl('swapSigInput');
       var genBtn = getEl('swapGenerateBtn');
       var copyBtn = getEl('swapCopyBtn');
       var qrBtn = getEl('swapQrBtn');
@@ -803,11 +737,6 @@ code {
 
       toChain.addEventListener('change', function() {
         populateTokens(toToken, toChain.value);
-      });
-
-      checkbox.addEventListener('change', function() {
-        sigInput.disabled = !checkbox.checked;
-        if (!checkbox.checked) sigInput.value = '';
       });
 
       genBtn.addEventListener('click', function() {
@@ -841,7 +770,6 @@ code {
         }
 
         var params = [];
-        var sigParams = [];
         
         var amt = amountInput.value;
         if (amt && parseFloat(amt) > 0) {
@@ -849,21 +777,12 @@ code {
           if (!base) { showToast('Invalid amount'); return; }
           baseDisplay.value = base;
           params.push('amount=' + encodeURIComponent(base));
-          sigParams.push('amount');
         } else {
           baseDisplay.value = '';
         }
 
         params.push('from=' + encodeURIComponent(fromNs + '/' + fromAsset));
-        sigParams.push('from');
-        
         params.push('to=' + encodeURIComponent(toNs + '/' + toAsset));
-        sigParams.push('to');
-
-        if (checkbox.checked && sigInput.value.trim()) {
-          params.push('sig_params=' + encodeURIComponent(sigParams.join(',')));
-          params.push('sig=' + encodeURIComponent(sigInput.value.trim()));
-        }
 
         var url = 'https://link.metamask.io/swap?' + params.join('&');
 
@@ -889,9 +808,6 @@ code {
         populateTokens(toToken, 'polygon');
         amountInput.value = '';
         baseDisplay.value = '';
-        checkbox.checked = false;
-        sigInput.disabled = true;
-        sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
         renderQr('swapQrContainer', 'swapQrWrap', '');
@@ -904,8 +820,6 @@ code {
       var chainSelect = getEl('buyChainSelect');
       var tokenSelect = getEl('buyTokenSelect');
       var amountInput = getEl('buyAmountInput');
-      var checkbox = getEl('buySignedCheck');
-      var sigInput = getEl('buySigInput');
       var genBtn = getEl('buyGenerateBtn');
       var copyBtn = getEl('buyCopyBtn');
       var qrBtn = getEl('buyQrBtn');
@@ -918,11 +832,6 @@ code {
 
       chainSelect.addEventListener('change', function() {
         populateTokens(tokenSelect, chainSelect.value);
-      });
-
-      checkbox.addEventListener('change', function() {
-        sigInput.disabled = !checkbox.checked;
-        if (!checkbox.checked) sigInput.value = '';
       });
 
       genBtn.addEventListener('click', function() {
@@ -947,22 +856,13 @@ code {
         }
 
         var params = [];
-        var sigParams = [];
 
         var amt = amountInput.value;
         if (amt && parseFloat(amt) > 0) {
           params.push('amount=' + encodeURIComponent(amt));
-          sigParams.push('amount');
         }
 
-        // Buy uses assetId parameter
         params.push('assetId=' + encodeURIComponent(ns + '/' + asset));
-        sigParams.push('assetId');
-
-        if (checkbox.checked && sigInput.value.trim()) {
-          params.push('sig_params=' + encodeURIComponent(sigParams.join(',')));
-          params.push('sig=' + encodeURIComponent(sigInput.value.trim()));
-        }
 
         var url = 'https://link.metamask.io/buy?' + params.join('&');
 
@@ -985,9 +885,6 @@ code {
         chainSelect.value = 'ethereum';
         populateTokens(tokenSelect, 'ethereum');
         amountInput.value = '';
-        checkbox.checked = false;
-        sigInput.disabled = true;
-        sigInput.value = '';
         output.textContent = '';
         output.classList.remove('has-content');
         renderQr('buyQrContainer', 'buyQrWrap', '');
