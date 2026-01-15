@@ -328,6 +328,8 @@ code {
   background: white;
   padding: 10px;
   border-radius: 10px;
+  border: 1px solid var(--border);
+  display: block;
 }
 
 .qr-help {
@@ -688,14 +690,21 @@ code {
       try {
         QRCode.toCanvas(canvas, text, {
           width: 196,
-          margin: 1
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'M'
         }, function(err) {
           if (err) {
+            console.error('QR Error:', err);
             showToast('QR generation failed');
             clearCanvas(canvas);
           }
         });
       } catch (e) {
+        console.error('QR Exception:', e);
         showToast('QR generation failed');
         clearCanvas(canvas);
       }
