@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Generate MetaMask deeplinks for Home, Swap, Buy, and Predict Markets with pre-filled parameters.">
   <title>MetaMask Deeplink Generator</title>
+  <link rel="icon" type="image/svg+xml" href="https://images.ctfassets.net/clixtyxoaeas/1ezuBGezqfIeifWdVtwU4c/d970d4cdf13b163efddddd5709164d2e/MetaMask-icon-Fox.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Euclid+Circular+B:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -102,6 +103,85 @@ h2 {
   margin-bottom: 24px;
   box-shadow: var(--shadow);
   color: var(--muted);
+}
+
+.disclaimer {
+  margin-bottom: 40px;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.disclaimer h3 {
+  font-size: 18px;
+  margin: 0 0 16px;
+  font-weight: 600;
+}
+
+.disclaimer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.disclaimer li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.disclaimer li:last-child { border-bottom: none; }
+
+.signing-warning {
+  background: #fee;
+  border: 3px solid #dc3545;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.signing-warning-title {
+  color: #dc3545;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+.signing-warning-text {
+  color: #721c24;
+  font-size: 16px;
+  margin: 8px 0;
+  font-weight: 500;
+}
+
+.signing-warning a {
+  color: #dc3545;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+@media (prefers-color-scheme: dark) {
+  .signing-warning {
+    background: #3a1a1a;
+    border-color: #dc3545;
+  }
+  
+  .signing-warning-title {
+    color: #ff6b6b;
+  }
+  
+  .signing-warning-text {
+    color: #ffb3b3;
+  }
+  
+  .signing-warning a {
+    color: #ff6b6b;
+  }
 }
 
 .grid {
@@ -341,36 +421,6 @@ code {
 
 .toast.show { transform: translateX(0); }
 
-.disclaimer {
-  margin-top: 40px;
-  padding: 24px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-}
-
-.disclaimer h3 {
-  font-size: 18px;
-  margin: 0 0 16px;
-  font-weight: 600;
-}
-
-.disclaimer ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.disclaimer li {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.disclaimer li:last-child { border-bottom: none; }
-
 .qr-wrap {
   margin-top: 16px;
   padding: 16px;
@@ -454,6 +504,25 @@ code {
       <p>Generate deeplinks for MetaMask Home, Swap, Buy, and Predict Markets. Select your parameters and click Generate. Supports EVM, Solana, Bitcoin, and Tron. <strong>Now with live USD conversion and mUSD support!</strong></p>
     </section>
 
+    <section class="disclaimer">
+      <div class="signing-warning">
+        <div class="signing-warning-title">⚠️ IMPORTANT: DON'T FORGET TO SIGN YOUR DEEPLINK ⚠️</div>
+        <div class="signing-warning-text">
+          All deeplinks must be signed using the MetaMask Deeplink Signer before use.
+        </div>
+        <div class="signing-warning-text">
+          Visit: <a href="https://signer.link.metamask.consensys.io" target="_blank" rel="noopener noreferrer">https://signer.link.metamask.consensys.io</a>
+        </div>
+      </div>
+
+      <h3>📋 Important Information</h3>
+      <ul>
+        <li><strong>Predict Markets:</strong> Uses Polymarket's Gamma API to fetch market IDs. Requires valid market slug or direct ID.</li>
+        <li><strong>USD Conversion:</strong> Live prices from CoinGecko API. Click USD/Crypto toggle to switch input mode.</li>
+        <li><strong>mUSD:</strong> MetaMask USD stablecoin - crypto amounts only (no USD conversion).</li>
+      </ul>
+    </section>
+
     <section class="grid">
       <!-- HOME CARD -->
       <article class="card">
@@ -504,19 +573,18 @@ code {
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label for="amountInput">Amount (optional)</label>
-            <div class="input-with-toggle">
-              <input type="number" id="amountInput" min="0" step="any" placeholder="e.g., 1.5">
-              <button type="button" class="currency-toggle" id="swapCurrencyToggle">USD</button>
-            </div>
-            <div class="conversion-info" id="swapConversionInfo"></div>
+        <div>
+          <label for="amountInput">Amount (optional)</label>
+          <div class="input-with-toggle">
+            <input type="number" id="amountInput" min="0" step="any" placeholder="e.g., 1.5">
+            <button type="button" class="currency-toggle" id="swapCurrencyToggle">USD</button>
           </div>
-          <div>
-            <label>Base Units (auto)</label>
-            <input type="text" id="baseUnitsDisplay" readonly placeholder="Calculated">
-          </div>
+          <div class="conversion-info" id="swapConversionInfo"></div>
+        </div>
+
+        <div>
+          <label>Base Units (auto)</label>
+          <input type="text" id="baseUnitsDisplay" readonly placeholder="Calculated">
         </div>
 
         <div class="btn-group">
@@ -620,17 +688,6 @@ code {
         <div class="info">💡 Paste the full Polymarket URL or enter the market ID directly. The slug will be automatically extracted from the URL.</div>
         <div class="foot">Base: <code>https://link.metamask.io/predict?marketId=</code></div>
       </article>
-    </section>
-
-    <section class="disclaimer">
-      <h3>📋 Important Information</h3>
-      <ul>
-        <li><strong>Routing:</strong> Desktop with Extension → opens Extension. Mobile with app → opens app. Otherwise → download page.</li>
-        <li><strong>Versions:</strong> Home: Ext ≥12.23.0, Mobile ≥7.51.0 | Swap: Ext ≥13.0.0, Mobile ≥7.51.0 | Predict: Latest versions</li>
-        <li><strong>Predict Markets:</strong> Uses Polymarket's Gamma API to fetch market IDs. Requires valid market slug or direct ID.</li>
-        <li><strong>USD Conversion:</strong> Live prices from CoinGecko API. Click USD/Crypto toggle to switch input mode.</li>
-        <li><strong>mUSD:</strong> MetaMask USD stablecoin - crypto amounts only (no USD conversion).</li>
-      </ul>
     </section>
   </main>
 
